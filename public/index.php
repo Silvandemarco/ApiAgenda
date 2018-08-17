@@ -13,6 +13,9 @@ require __DIR__ . '/../vendor/autoload.php';
 
 session_start();
 
+// Database
+require __DIR__ . '/../src/database.php';
+
 // Instantiate the app
 $settings = require __DIR__ . '/../src/settings.php';
 $app = new \Slim\App($settings);
@@ -24,12 +27,15 @@ require __DIR__ . '/../src/dependencies.php';
 require __DIR__ . '/../src/middleware/middleware.php';
 
 // Models
-require __DIR__ . '/../model/pdo.class.php';
-require __DIR__ . '/../model/cidades.php';
+//require __DIR__ . '/../model/pdo.class.php';
+require __DIR__ . '/../model/cidades.class.php';
+require __DIR__ . '/../model/pessoas.class.php';
+require __DIR__ . '/../model/profissionais.class.php';
 
 // Register routes
 //require __DIR__ . '/../src/routes/routes.php';
 require __DIR__ . '/../src/routes/cidades.php';
+require __DIR__ . '/../src/routes/profissionais.php';
 
 // Run app
 $app->run();

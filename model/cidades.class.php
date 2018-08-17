@@ -15,19 +15,52 @@ class Cidades {
         $this->pais = "";
     }
 
+    public function getId() {
+        return $this->id;
+    }  
+    public function setId($_id) {
+        $this->id= $_id;
+    }
+
+    public function getNome() {
+        return $this->nome;
+    } 
+    public function setNome($name) {
+        $this->nome= $name;
+    }
+
+    public function getUf() {
+        return $this->uf;
+    } 
+    public function setUf($_uf) {
+        $this->uf= $_uf;
+    }
+
+    public function getPais() {
+        return $this->pais;
+    }  
+    public function setPais($_pais) {
+        $this->pais= $_pais;
+    }
+
     public function exibir($request, $response){
-        $pdo = \Model\Database::conexao();
-        $stmt = $pdo->prepare('SELECT * FROM CIDADE');
-        $stmt->execute();
-        $result = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        if($request->getParam('id') > 0)
+            $this->id = $request->getParam('id');
+
+        require __DIR__ . '/../src/database.php';
+        if($this->getId() == 0)
+            $result = $database->select('CIDADE', '*');
+        else
+            $result = $database->select('CIDADE', '*',['id_cidade'=>$this->id]);
+
         return $response->withJson($result,200,JSON_UNESCAPED_UNICODE);
     }
 
     public function exibirPorQuantidade($request, $response){
         $quant = $request->getAttribute('route')->getArgument('quantidade');
-        $pdo = \Model\Database::conexao();
-        $stmt = $pdo->prepare("SELECT * FROM CIDADE LIMIT :quant");
-        $stmt->bindParam(":quant",$quant, PDO::PARAM_INT);
+        require __DIR__ . '/../src/database.php';
+        $stmt = $database->pdo->prepare("SELECT * FROM CIDADE LIMIT :quant");
+        $stmt->bindParam(":quant",$quant, \PDO::PARAM_INT);
         $stmt->execute();
         $result = $stmt->fetchAll(\PDO::FETCH_ASSOC);
         return $response->withJson($result,200,JSON_UNESCAPED_UNICODE);
