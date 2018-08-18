@@ -70,20 +70,28 @@ class Cidades {
         $this->nome = $request->getParam('nome');
         $this->uf = $request->getParam('uf');
         $this->pais = $request->getParam('pais');
-
+        /*
         $pdo = \Model\Database::conexao();
         $stmt = $pdo->prepare("INSERT INTO `cidade`(`NOME`, `UF`, `PAIS`) VALUES (:nome,:uf,:pais)");
         $stmt->bindParam(":nome",$this->nome);
         $stmt->bindParam(":uf",$this->uf);
         $stmt->bindParam(":pais",$this->pais);
         $stmt->execute();
+        */
+        require __DIR__ . '/../src/database.php';
+        $database->insert("cidade", [
+            "NOME" => $this->nome,
+            "UF" => $this->uf,
+            "PAIS" => $this->pais
+        ]);
 
         return $response->withJson(
             [
                 "erro" => false,
+                "ID" => $database->id(),
                 "msg" => "Cidade ".$this->nome." inserido com sucesso."
             ]
-        );
+            ,201,JSON_UNESCAPED_UNICODE);
     }
 
     public function alterar($request, $response){
@@ -91,7 +99,7 @@ class Cidades {
         $this->nome = $request->getParam('nome');
         $this->uf = $request->getParam('uf');
         $this->pais = $request->getParam('pais');
-        
+        /*
         $pdo = \Model\Database::conexao();
         $stmt = $pdo->prepare("UPDATE `cidade` SET `NOME`=:nome,`UF`=:uf,`PAIS`=:pais WHERE `ID_CIDADE`=:id");
         $stmt->bindParam(":id",$this->id, PDO::PARAM_INT);
@@ -99,8 +107,18 @@ class Cidades {
         $stmt->bindParam(":uf",$this->uf);
         $stmt->bindParam(":pais",$this->pais);
         $stmt->execute();
+        */
+        require __DIR__ . '/../src/database.php';
+        $query = $database->update('CIDADE',[
+            "NOME" => $this->nome,
+            "UF" => $this->uf,
+            "PAIS" => $this->pais
+        ],
+        [
+            'id_cidade'=>$this->id
+        ]);
 
-        if( $stmt->rowCount() > 0 ) {
+        if( $query->rowCount() > 0 ) {
             return $response->withJson(
                 [
                     "erro" => false,
@@ -113,19 +131,23 @@ class Cidades {
                     "erro" => true,
                     "msg" => "Cidade ".$this->id." não alterada."
                 ]
+                ,404,JSON_UNESCAPED_UNICODE
             );
          }
     }
 
     public function excluir($request, $response){
         $this->id = $request->getParam('id');
-
+        /*
         $pdo = \Model\Database::conexao();
         $stmt = $pdo->prepare("DELETE FROM `cidade` WHERE `ID_CIDADE`=:id");
         $stmt->bindParam(":id",$this->id, PDO::PARAM_INT);
         $stmt->execute();
+        */
+        require __DIR__ . '/../src/database.php';
+        $query = $database->delete('CIDADE',["ID_CIDADE" => $this->id]);
 
-        if( $stmt->rowCount() > 0 ) {
+        if( $query->rowCount() > 0 ) {
             return $response->withJson(
                 [
                     "erro" => false,
@@ -138,6 +160,7 @@ class Cidades {
                     "erro" => true,
                     "msg" => "Cidade ".$this->id." não encontrada."
                 ]
+                ,404,JSON_UNESCAPED_UNICODE
             );
          }
     }

@@ -42,17 +42,25 @@ class Profissionais extends Pessoas {
         if($request->getParam('id') > 0)
             $this->id = $request->getParam('id');
         
-        $pdo = \Model\Database::conexao();
-        $stmt = $pdo->prepare('SELECT * FROM `pessoa` INNER JOIN `profissional` ON pessoa.ID_PESSOA = profissional.ID_PESSOA INNER JOIN `cidade` on pessoa.ID_CIDADE = cidade.ID_CIDADE WHERE PESSOA.ID_PESSOA =:id or :id = 0');
-        $stmt->bindParam(":id",$this->id, PDO::PARAM_INT);
-        $stmt->execute();
-        $result = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-        $rows = $stmt->rowCount();
+        //$pdo = \Model\Database::conexao();
+        //$stmt = $pdo->prepare('SELECT * FROM `pessoa` INNER JOIN `profissional` ON pessoa.ID_PESSOA = profissional.ID_PESSOA INNER JOIN `cidade` on pessoa.ID_CIDADE = cidade.ID_CIDADE WHERE PESSOA.ID_PESSOA =:id or :id = 0');
+        //$stmt->bindParam(":id",$this->id, PDO::PARAM_INT);
+        //$stmt->execute();
+        //$result = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+        require __DIR__ . '/../src/database.php';
+        if($this->getId() == 0)
+            $result = $database->select('pessoa',["[><]profissional" => ["pessoa.ID_PESSOA" => "ID_PESSOA"]],'*');
+        else
+            $result = $database->select('pessoa',["[><]profissional" => ["pessoa.ID_PESSOA" => "ID_PESSOA"]],'*',["PESSOA.ID_PESSOA" => $this->id]);
+
+        $rows = count($result);
         for ($i=0; $i<$rows;$i++){
-            $stmt = $pdo->prepare("SELECT * FROM CIDADE WHERE ID_CIDADE = :id");
-            $stmt->bindParam(":id",$result[$i]["ID_CIDADE"], PDO::PARAM_INT);
-            $stmt->execute();
-            $result2 = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            //$stmt = $pdo->prepare("SELECT * FROM CIDADE WHERE ID_CIDADE = :id");
+            //$stmt->bindParam(":id",$result[$i]["ID_CIDADE"], PDO::PARAM_INT);
+            //$stmt->execute();
+            //$result2 = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            $result2 = $database->select('CIDADE', '*',['id_cidade'=>$result[$i]["ID_CIDADE"]]);
             $result[$i]["cidade"] = $result2;
         }
         return $response->withJson($result,200,JSON_UNESCAPED_UNICODE);
@@ -60,17 +68,25 @@ class Profissionais extends Pessoas {
 
     public function exibirPorQuantidade($request, $response){
         $quant = $request->getAttribute('route')->getArgument('quantidade');
+        /*
         $pdo = \Model\Database::conexao();
         $stmt = $pdo->prepare("SELECT * FROM `pessoa` INNER JOIN `profissional` ON pessoa.ID_PESSOA = profissional.ID_PESSOA INNER JOIN `cidade` on pessoa.ID_CIDADE = cidade.ID_CIDADE  LIMIT :quant");
         $stmt->bindParam(":quant",$quant, PDO::PARAM_INT);
         $stmt->execute();
         $result = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-        $rows = $stmt->rowCount();
+        */
+        require __DIR__ . '/../src/database.php';
+        $result = $database->select('pessoa',["[><]profissional" => ["pessoa.ID_PESSOA" => "ID_PESSOA"]],'*',["LIMIT" => $quant]);
+
+        $rows = count($result);
         for ($i=0; $i<$rows;$i++){
+            /*
             $stmt = $pdo->prepare("SELECT * FROM CIDADE WHERE ID_CIDADE = :id");
             $stmt->bindParam(":id",$result[$i]["ID_CIDADE"], PDO::PARAM_INT);
             $stmt->execute();
             $result2 = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            */
+            $result2 = $database->select('CIDADE', '*',['id_cidade'=>$result[$i]["ID_CIDADE"]]);
             $result[$i]["cidade"] = $result2;
         }
         return $response->withJson($result,200,JSON_UNESCAPED_UNICODE);
@@ -89,8 +105,8 @@ class Profissionais extends Pessoas {
         $this->setNome($request->getParam('nome'));
         $this->setSobrenome($request->getParam('sobrenome'));
         $this->setFantasia($request->getParam('fantasia')); 
+        /*
         $idCidade = $this->cidade->getId();      
-
         $pdo = \Model\Database::conexao();
         $stmt = $pdo->prepare("INSERT INTO `pessoa`(`EMAIL`, `TELEFONE`, `ENDERECO`, `NUMERO`, `COMPLEMENTO`, `BAIRRO`, `ID_CIDADE`, `CEP`, `SENHA`) VALUES (:email,:telefone,:endereco,:numero,:complemento,:bairro,:idCidade,:cep,:senha)");
         $stmt->bindParam(":email",$this->email);
@@ -111,30 +127,80 @@ class Profissionais extends Pessoas {
         $stmt->bindParam(":fantasia",$this->fantasia);        
         $stmt->bindParam(":sobrenome",$this->sobrenome);        
         $stmt->execute();
+        */
+        require __DIR__ . '/../src/database.php';
+        $database->insert("pessoa", [
+            "EMAIL" => $this->email,
+            "TELEFONE" => $this->telefone,
+            "ENDERECO" => $this->endereco,
+            "NUMERO" => $this->numero,
+            "COMPLEMENTO" => $this->complemento,
+            "BAIRRO" => $this->bairro,
+            "ID_CIDADE" => $this->cidade->getId(),
+            "CEP" => $this->cep,
+            "SENHA" => $this->senha
+        ]);
+
+        $this->setId($database->id());
+
+        $database->insert("profissional", [
+            "ID_PESSOA" => $this->id,
+            "NOME" => $this->nome,
+            "SOBRENOME" => $this->sobrenome,
+            "FANTASIA" => $this->fantasia
+        ]);
 
         return $response->withJson(
             [
                 "erro" => false,
+                "ID" => $this->getId(),
                 "msg" => "Profissional ".$this->nome." inserido com sucesso."
-            ]
+            ],201,JSON_UNESCAPED_UNICODE
         );
     }
 
     public function alterar($request, $response){
         $this->id = $request->getParam('id');
-        $this->nome = $request->getParam('nome');
-        $this->uf = $request->getParam('uf');
-        $this->pais = $request->getParam('pais');
+        $this->setEmail($request->getParam('email'));
+        $this->setTelefone($request->getParam('telefone'));
+        $this->setEndereco($request->getParam('endereco'));
+        $this->setNumero($request->getParam('numero'));
+        $this->setComplemento($request->getParam('complemento'));
+        $this->setBairro($request->getParam('bairro'));
+        $this->cidade->setId($request->getParam('idCidade'));
+        $this->setCep($request->getParam('cep'));
+        $this->setSenha($request->getParam('senha'));
+        $this->setNome($request->getParam('nome'));
+        $this->setSobrenome($request->getParam('sobrenome'));
+        $this->setFantasia($request->getParam('fantasia')); 
         
-        $pdo = \Model\Database::conexao();
-        $stmt = $pdo->prepare("UPDATE `cidade` SET `NOME`=:nome,`UF`=:uf,`PAIS`=:pais WHERE `ID_CIDADE`=:id");
-        $stmt->bindParam(":id",$this->id, PDO::PARAM_INT);
-        $stmt->bindParam(":nome",$this->nome);
-        $stmt->bindParam(":uf",$this->uf);
-        $stmt->bindParam(":pais",$this->pais);
-        $stmt->execute();
+        require __DIR__ . '/../src/database.php';
+        $query = $database->update('pessoa',[
+            "EMAIL" => $this->email,
+            "TELEFONE" => $this->telefone,
+            "ENDERECO" => $this->endereco,
+            "NUMERO" => $this->numero,
+            "COMPLEMENTO" => $this->complemento,
+            "BAIRRO" => $this->bairro,
+            "ID_CIDADE" => $this->cidade->getId(),
+            "CEP" => $this->cep,
+            "SENHA" => $this->senha
+        ],
+        [
+            'id_pessoa'=>$this->id
+        ]);
+        $row = $query->rowCount();
 
-        if( $stmt->rowCount() > 0 ) {
+        $query = $database->update("profissional", [
+            "NOME" => $this->nome,
+            "SOBRENOME" => $this->sobrenome,
+            "FANTASIA" => $this->fantasia
+        ],
+        [
+            'id_pessoa'=>$this->id
+        ]);
+
+        if( $query->rowCount() > 0 or $row > 0 ) {
             return $response->withJson(
                 [
                     "erro" => false,
@@ -146,20 +212,19 @@ class Profissionais extends Pessoas {
                 [
                     "erro" => true,
                     "msg" => "Cidade ".$this->id." não alterada."
-                ]
+                ],404,JSON_UNESCAPED_UNICODE
             );
          }
     }
 
     public function excluir($request, $response){
         $this->id = $request->getParam('id');
+        
+        require __DIR__ . '/../src/database.php';
+        $query = $database->delete('pessoa',["id_pessoa" => $this->id]);
+        $query = $database->delete('Profissional',["id_pessoa" => $this->id]);
 
-        $pdo = \Model\Database::conexao();
-        $stmt = $pdo->prepare("DELETE FROM `cidade` WHERE `ID_CIDADE`=:id");
-        $stmt->bindParam(":id",$this->id, PDO::PARAM_INT);
-        $stmt->execute();
-
-        if( $stmt->rowCount() > 0 ) {
+        if( $query->rowCount() > 0 ) {
             return $response->withJson(
                 [
                     "erro" => false,
@@ -171,7 +236,7 @@ class Profissionais extends Pessoas {
                 [
                     "erro" => true,
                     "msg" => "Cidade ".$this->id." não encontrada."
-                ]
+                ],404,JSON_UNESCAPED_UNICODE
             );
          }
     }
