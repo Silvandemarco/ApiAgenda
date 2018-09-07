@@ -60,10 +60,10 @@ class Profissionais extends Pessoas {
             //$stmt->bindParam(":id",$result[$i]["ID_CIDADE"], PDO::PARAM_INT);
             //$stmt->execute();
             //$result2 = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-            $result2 = $database->select('CIDADE', '*',['id_cidade'=>$result[$i]["ID_CIDADE"]]);
-            $result[$i]["cidade"] = $result2;
+            $result2 = $database->select('CIDADE', '*',['id_cidade'=>$result[$i]["id_cidade"]]);
+            $result[$i]["cidade"] = $result2[0];
         }
-        return $response->withJson($result,200,JSON_UNESCAPED_UNICODE);
+        return $response->withJson(["profissionais" => $result],200,JSON_UNESCAPED_UNICODE);
     }
 
     public function exibirPorQuantidade($request, $response){
@@ -86,10 +86,10 @@ class Profissionais extends Pessoas {
             $stmt->execute();
             $result2 = $stmt->fetchAll(\PDO::FETCH_ASSOC);
             */
-            $result2 = $database->select('CIDADE', '*',['id_cidade'=>$result[$i]["ID_CIDADE"]]);
-            $result[$i]["cidade"] = $result2;
+            $result2 = $database->select('CIDADE', '*',['id_cidade'=>$result[$i]["id_cidade"]]);
+            $result[$i]["cidade"] = $result2[0];
         }
-        return $response->withJson($result,200,JSON_UNESCAPED_UNICODE);
+        return $response->withJson(["profissionais" => $result],200,JSON_UNESCAPED_UNICODE);
     }
 
     public function inserir($request, $response){

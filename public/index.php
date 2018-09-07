@@ -53,11 +53,15 @@ require __DIR__ . '/../src/middleware/middleware.php';
 require __DIR__ . '/../model/cidades.class.php';
 require __DIR__ . '/../model/pessoas.class.php';
 require __DIR__ . '/../model/profissionais.class.php';
+require __DIR__ . '/../model/servicos.class.php';
+require __DIR__ . '/../model/agenda.class.php';
 
 // Register routes
 //require __DIR__ . '/../src/routes/routes.php';
 require __DIR__ . '/../src/routes/cidades.php';
 require __DIR__ . '/../src/routes/profissionais.php';
+require __DIR__ . '/../src/routes/servicos.php';
+require __DIR__ . '/../src/routes/agenda.php';
 
 // Run app
 $app->run();

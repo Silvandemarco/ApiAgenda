@@ -1,7 +1,7 @@
 <?php
 
 namespace Model;
-//use PDO;
+use PDO;
 class Pessoas {
     protected $id;
     protected $email;
