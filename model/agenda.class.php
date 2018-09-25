@@ -7,15 +7,17 @@ class Agenda {
     private $id;
     private $profissional;
     private $cliente;
-    private $datatime;
+    private $datetime;
     private $servicos;
+    private $id_prof_serv;
 
     public function __construct(){
         $this->id = 0;
         $this->profissional = new Pessoas();
         $this->cliente = new Pessoas();
-        $this->datatime = new \DateTime();
+        $this->datetime = new \DateTime();
         $this->servicos = [];
+        $this->id_prof_serv = [];
     }
 
 
@@ -125,16 +127,16 @@ class Agenda {
             $this->datatime = date("dMY");
 
         if(!$request->getParam('servico')  == NULL)
-            $this->servicos = $request->getParam('servico');
+            $this->id_prof_serv = $request->getParam('servico');
 
-        if($request->getParam('id_pessoa') > 0 and count($this->servicos) > 0){
+        if($request->getParam('id_pessoa') > 0 and count($this->id_prof_serv) > 0){
             require __DIR__ . '/../src/database.php';
 
             $horasTrabDia = $database->select('horas_dias_semana',['hora_inicial', 'hora_final'],["AND" => ["id_pessoa" => $this->profissional, "dia_semana" => Medoo::raw("DAYNAME('".$this->datatime."')")]]);
             $agendamentosDia = $database->select("vw_agendamentos",["hora_inicial", "hora_final"],["AND" =>["id_profissional" => $this->profissional,"data" => $this->datatime]]);
             $duracao = 0;
-            for($i = 0;$i < count($this->servicos); $i++){
-                $duracao += $database->select("servico","duracao",["id_servico" => $this->servicos[$i]])[0];
+            for($i = 0;$i < count($this->id_prof_serv); $i++){
+                $duracao += $database->select("prof_serv","duracao",["id_prof_serv" => $this->id_prof_serv[$i]])[0];
             }
             if($duracao == 0){
                 $duracao = 1440;
@@ -219,6 +221,67 @@ class Agenda {
                 "msg" => "Informe o profissional e os serviços."
             ];
             return $response->withJson($result,400,JSON_UNESCAPED_UNICODE);
+        }
+    }
+
+    public function inserir($request, $response){
+        $json = $request->getBody();
+
+        $data = json_decode($json);
+
+        $prof = $data->id_profissional;
+        $cli = $data->id_cliente;
+        $this->datetime = new \DateTime($data->datetime);
+        $this->id_prof_serv = $data->prof_serv;
+
+        require __DIR__ . '/../src/database.php';
+
+        $query = $database->insert("agenda", [
+            "id_profissional" => $prof,
+            "id_cliente" => $cli,
+            "datetime" => $this->datetime->format('Y-m-d H:i:s')
+        ]);
+
+        if($query->rowCount() > 0){
+        
+            $this->setId($database->id());
+            for($i=0;$i<count($this->id_prof_serv);$i++){
+                $query = $database->insert("servico_agenda", [
+                    "id_servico" => $this->id_prof_serv[$i]->id_prof_serv,
+                    "id_agenda" => $this->getId()
+                ]);
+                if($query->rowCount() == 0){
+                    break;
+                }
+            }
+            if($query->rowCount() > 0){
+                return $response->withJson(
+                    [
+                        "erro" => false,
+                        "id" => $this->getId(),
+                        "msg" => "Agendamento inserido com sucesso."
+                    ],201,JSON_UNESCAPED_UNICODE
+                );
+            }
+            else{
+                $database->delete("agenda", [
+                    "id_agenda" => $this->getId()
+                ]);
+                return $response->withJson(
+                    [
+                        "erro" => true,
+                        "msg" => "Falha no agendamento."
+                    ],404,JSON_UNESCAPED_UNICODE
+                );
+            }
+        }
+        else{
+            return $response->withJson(
+                [
+                    "erro" => true,
+                    "msg" => "Falha no agendamento."
+                ],404,JSON_UNESCAPED_UNICODE
+            );
         }
     }
 }

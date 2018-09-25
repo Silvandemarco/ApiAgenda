@@ -3,14 +3,14 @@
 use Slim\Http\Request;
 use Slim\Http\Response;
 
-$app->get('/agenda', function(Request $request, Response $response) {
-    $agenda = new \Model\Agenda();
-    return $agenda->exibirHorasLivres($request, $response);
+$app->post('/inserirLogin', function(Request $request, Response $response) {
+    $login = new \Model\Pessoas();
+    return $login->inserirLogin($request, $response);
 });
 
-$app->post('/agenda', function(Request $request, Response $response){
-    $agenda = new \Model\Agenda();
-    return $agenda->inserir($request, $response);
+$app->post('/validaLogin', function(Request $request, Response $response){
+    $login = new \Model\Pessoas();
+    return $login->validaLogin($request, $response);
 });
 /*
 $app->get('/cidades/{quantidade}', function(Request $request, Response $response){

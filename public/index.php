@@ -62,6 +62,8 @@ require __DIR__ . '/../src/routes/cidades.php';
 require __DIR__ . '/../src/routes/profissionais.php';
 require __DIR__ . '/../src/routes/servicos.php';
 require __DIR__ . '/../src/routes/agenda.php';
+require __DIR__ . '/../src/routes/login.php';
+require __DIR__ . '/../src/routes/pessoas.php';
 
 // Run app
 $app->run();
