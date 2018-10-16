@@ -320,5 +320,203 @@ class Pessoas {
 		}
     }
 
-	
+	public function exibirHorasDia($request, $response){
+		if(!empty($request->getParam('pessoa')))
+			$this->id = $request->getParam('pessoa');
+		if(!empty($request->getParam('dia')))
+			$dia = $request->getParam('dia');
+
+		require __DIR__ . '/../src/database.php';
+		$result = $database->select('horas_dias_semana', ['id_pessoa','dia_semana','hora_inicial','hora_Final'],['id_pessoa'=>$this->id,'dia_semana'=>$dia]);
+
+		return $response->withJson($result,200,JSON_UNESCAPED_UNICODE);
+	}
+
+	public function inserirHorasDia($request, $response){
+		$json = $request->getBody();
+
+		$data = json_decode($json);
+
+		//var_dump($data[0]);
+		$linhas = 0;
+		for($i = 0; $i<count($data); $i++){
+			$this->id = $data[$i]->id_pessoa;
+			$dia = $data[$i]->dia_semana;
+			$horaInicial = $data[$i]->hora_inicial;
+			$horaFinal = $data[$i]->hora_final;
+
+			require __DIR__ . '/../src/database.php';
+
+			$query = $database->insert('horas_dias_semana', 
+			[
+				'id_pessoa' => $this->id,
+				'dia_semana' => $dia,
+				'hora_inicial' => $horaInicial,
+				'hora_Final'=> $horaFinal
+			]);
+			if($query->rowCount() > 0){
+				$linhas++;
+			}
+		}
+
+		if($linhas > 0){
+
+			return $response->withJson(
+				[
+					"erro" => false,
+					"msg" => $linhas." períodos de horas inseridas com sucesso."
+				],201,JSON_UNESCAPED_UNICODE
+			);
+		
+		}
+		else{
+			return $response->withJson(
+				[
+					"erro" => true,
+					"msg" => "Falha ao inserir as horas."
+				],404,JSON_UNESCAPED_UNICODE
+			);
+		}
+	}
+
+	public function deletarHorasDia($request, $response){
+		// $json = $request->getBody();
+
+		// $data = json_decode($json);
+
+		// $this->id = $data->id_pessoa;
+		// $dia = $data->dia_semana;
+
+		if(!empty($request->getParam('pessoa')))
+			$this->id = $request->getParam('pessoa');
+		if(!empty($request->getParam('dia')))
+			$dia = $request->getParam('dia');
+		
+		require __DIR__ . '/../src/database.php';
+
+		$query = $database->delete('horas_dias_semana', ['id_pessoa'=>$this->id,'dia_semana'=>$dia]);
+
+		if($query->rowCount() > 0){
+
+			return $response->withJson(
+				[
+					"erro" => false,
+					"msg" => "Horas excluidas com sucesso."
+				],201,JSON_UNESCAPED_UNICODE
+			);
+		
+		}
+		else{
+			return $response->withJson(
+				[
+					"erro" => true,
+					"msg" => "Falha ao excluir as horas."
+				],404,JSON_UNESCAPED_UNICODE
+			);
+		}
+	}
+
+	public function exibirDias($request, $response){
+		if(!empty($request->getParam('pessoa')))
+			$this->id = $request->getParam('pessoa');
+
+		$dias = [
+			[
+				"dia" => "Sunday", 
+				"status" => false
+			],
+			[
+				"dia" => "Monday", 
+				"status" => false
+			],
+			[
+				"dia" => "Tuesday", 
+				"status" => false
+			],
+			[
+				"dia" => "Wednesday", 
+				"status" => false
+			],
+			[
+				"dia" => "Thursday", 
+				"status" => false
+			],
+			[
+				"dia" => "Friday", 
+				"status" => false
+			],
+			[
+				"dia" => "Friday", 
+				"status" => false
+			]
+		];
+		require __DIR__ . '/../src/database.php';
+		for($i = 0;$i<count($dias); $i++){
+			$result = $database->select('horas_dias_semana', ['id_pessoa','dia_semana','hora_inicial','hora_Final'],['id_pessoa'=>$this->id,'dia_semana'=>$dias[$i]["dia"]]);
+			if(count($result)>0){
+				$dias[$i]["status"] = true;
+			}
+		}
+		return $response->withJson($dias,200,JSON_UNESCAPED_UNICODE);
+	}
+
+	public function exibirPessoa($request, $response){
+
+        if($request->getParam('id') > 0)
+			$this->id = $request->getParam('id');
+		if($request->getParam('email') != NULL)
+            $this->email = $request->getParam('email');
+		if($request->getParam('tipo') != NULL)
+			$this->tipo = $request->getParam('tipo');
+			
+		require __DIR__ . '/../src/database.php';
+
+		// $result = $database->select('pessoa','*',
+		// [
+		// 	"OR" => [
+		// 		"pessoa.id_pessoa" => $this->id,
+		// 		$this->id => 0
+		// 	],
+		// 	"OR" => [
+		// 		"pessoa.email" => $this->email,
+		// 		$this->email => ""
+		// 	],
+		// 	"OR" => [
+		// 		"pessoa.tipo" => $this->tipo,
+		// 		$this->tipo => ""
+		// 	]
+		// ]);
+		if($this->tipo == null){
+			if($this->getId() == 0 && $this->email == null)
+				$result = $database->select('pessoa','*');
+			elseif($this->email == null)
+				$result = $database->select('pessoa','*',["pessoa.id_pessoa" => $this->id]);
+			elseif($this->id == 0)
+				$result = $database->select('pessoa','*',["pessoa.email" => $this->email]);
+		}
+		else{
+			$result = $database->select('pessoa','*',["pessoa.tipo" => $this->tipo]);
+		}
+        
+        $rows = count($result);
+        for ($i=0; $i<$rows;$i++){
+            $result2 = $database->select('cidade', '*',['id_cidade'=>$result[$i]["id_cidade"]]);
+            $result[$i]["cidade"] = $result2[0];
+        }
+        return $response->withJson($result,200,JSON_UNESCAPED_UNICODE);
+    }
+
+    public function exibirPessoaPorQuantidade($request, $response){
+        $quant = $request->getAttribute('route')->getArgument('quantidade');
+
+        require __DIR__ . '/../src/database.php';
+        $result = $database->select('pessoa','*',["LIMIT" => $quant]);
+
+        $rows = count($result);
+        for ($i=0; $i<$rows;$i++){
+            $result2 = $database->select('CIDADE', '*',['id_cidade'=>$result[$i]["id_cidade"]]);
+            $result[$i]["cidade"] = $result2[0];
+        }
+        return $response->withJson($result,200,JSON_UNESCAPED_UNICODE);
+    }
 }

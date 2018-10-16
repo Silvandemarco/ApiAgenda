@@ -83,7 +83,7 @@ class Servicos {
                 $result = $database->select('servico',["[><]prof_serv" => ["servico.id_servico" => "id_servico"]],'*',["prof_serv.id_profissional" => $this->getProfissional()->getId(),"servico.id_servico" => $this->id]);
         }
         
-        return $response->withJson(["servicos" => $result],200,JSON_UNESCAPED_UNICODE);
+        return $response->withJson($result,200,JSON_UNESCAPED_UNICODE);
     }
 
     

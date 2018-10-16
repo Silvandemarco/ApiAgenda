@@ -239,7 +239,8 @@ class Agenda {
         $query = $database->insert("agenda", [
             "id_profissional" => $prof,
             "id_cliente" => $cli,
-            "datetime" => $this->datetime->format('Y-m-d H:i:s')
+            "datetime" => $this->datetime->format('Y-m-d H:i:s'),
+            "status" => "A"
         ]);
 
         if($query->rowCount() > 0){
@@ -283,5 +284,130 @@ class Agenda {
                 ],404,JSON_UNESCAPED_UNICODE
             );
         }
+    }
+
+    public function exibir($request, $response){
+        $prof = 0;
+        $data = "";
+        if($request->getParam('pessoa') > 0)
+			$prof = $request->getParam('pessoa');
+		if($request->getParam('data') != NULL)
+            $data = $request->getParam('data');
+
+		require __DIR__ . '/../src/database.php';
+		
+        if($prof == 0 && $data == null)
+            return $response->withJson(
+                [
+                    "erro" => true,
+                    "msg" => "Falha na consulta."
+                ],404,JSON_UNESCAPED_UNICODE
+            );
+        else{
+            $result = $database->select('agenda','*',["agenda.id_profissional" => $prof, "agenda.datetime[>=]" => $data." 00:00:00", "agenda.datetime[<=]" => $data." 23:59:59"]);
+        }
+        $rows = count($result);
+        for ($i=0; $i<$rows;$i++){
+            $result2 = $database->select('servico_agenda',["[><]prof_serv" => ["servico_agenda.id_servico" => "id_prof_serv"],"[><]servico" => ["prof_serv.id_servico" => "id_servico"]],["servico.id_servico","servico.nome","prof_serv.id_prof_serv","prof_serv.descricao","prof_serv.valor","prof_serv.duracao"],['servico_agenda.id_agenda'=>$result[$i]["id_agenda"]]);
+            $result[$i]["servicos"] = $result2[0];
+        }
+        return $response->withJson($result,200,JSON_UNESCAPED_UNICODE);
+    }
+
+    public function exibirMes($request, $response){
+        $cli = 0;
+        $mes = 0;
+        $ano = 0;
+        if($request->getParam('pessoa') > 0)
+			$cli = $request->getParam('pessoa');
+		if($request->getParam('mes') > 0)
+            $mes = $request->getParam('mes');
+        if($request->getParam('ano') > 0)
+            $ano = $request->getParam('ano');
+        $ultimo_dia = date("t", mktime(0,0,0,$mes,'01',$ano));
+		require __DIR__ . '/../src/database.php';
+		
+        if($cli == 0 || $mes == 0 || $ano == 0)
+            return $response->withJson(
+                [
+                    "erro" => true,
+                    "msg" => "Falha na consulta."
+                ],404,JSON_UNESCAPED_UNICODE
+            );
+        else{
+            $result = $database->select('agenda','*',["agenda.id_cliente" => $cli, "agenda.datetime[>=]" => $ano."-".$mes."-01 00:00:00", "agenda.datetime[<=]" => $ano."-".$mes."-".$ultimo_dia." 23:59:59"]);
+        }
+        $rows = count($result);
+        for ($i=0; $i<$rows;$i++){
+            $result2 = $database->select('servico_agenda',["[><]prof_serv" => ["servico_agenda.id_servico" => "id_prof_serv"],"[><]servico" => ["prof_serv.id_servico" => "id_servico"]],["servico.id_servico","servico.nome","prof_serv.id_prof_serv","prof_serv.descricao","prof_serv.valor","prof_serv.duracao"],['servico_agenda.id_agenda'=>$result[$i]["id_agenda"]]);
+            $result[$i]["servicos"] = $result2[0];
+        }
+        for ($i=0; $i<$rows;$i++){ 
+            $result2 = $database->select('pessoa','*',["pessoa.id_pessoa" => $result[$i]["id_profissional"]]);
+            $result[$i]["profissional"] = $result2[0];
+        }
+        return $response->withJson($result,200,JSON_UNESCAPED_UNICODE);
+    }
+
+    public function cancelar($request, $response){
+        // $json = $request->getBody();
+        // echo "json";
+        // echo $json;
+
+        // $data = json_decode($json);
+        // echo "data";
+        // echo $data;
+
+        if($request->getParam('id_agenda') > 0)
+			$idAgenda = $request->getParam('id_agenda');
+            // echo "idAgenda";
+            // echo $idAgenda;
+
+
+        //$idAgenda = $data->id_agenda;
+
+        require __DIR__ . '/../src/database.php';
+
+        $query = $database->update("agenda", ["status" => "C"],["id_agenda" => $idAgenda]);
+
+        if($query->rowCount() > 0){
+            //$enviaremail = mail("silvandemarco@gmail.com", "Teste", "teste teste", "From: webmaster@example.com");
+            //echo $enviaremail;
+            return $response->withJson(
+                [
+                    "erro" => false,
+                    "msg" => "Agendamento cancelado."
+                ],200,JSON_UNESCAPED_UNICODE
+            );
+            
+        }
+        else{
+            return $response->withJson(
+                [
+                    "erro" => true,
+                    "msg" => "Falha no cancelamento."
+                ],404,JSON_UNESCAPED_UNICODE
+            );
+        }
+    }
+
+    public function meses($request, $response){
+        $Cliente = 0;
+        if($request->getParam('cliente') > 0)
+            $Cliente = $request->getParam('cliente');
+        
+        require __DIR__ . '/../src/database.php';
+
+        if($Cliente > 0){
+            //$query = $database->select("agenda", ['ultimo' => Medoo::raw("MAX(datetime)"),'primeiro' => Medoo::raw("MIN(datetime)")],["id_cliente" => $Cliente]);
+            $query = $database->pdo->prepare("SELECT MONTH(datetime) as mes, year(datetime) as ano FROM `agenda` WHERE id_cliente = :cliente GROUP BY  MONTH(datetime), year(datetime)");
+            $query->bindParam(':cliente', $Cliente, PDO::PARAM_INT);
+            
+            $query->execute();
+            $result = $query->fetchAll(\PDO::FETCH_ASSOC);
+        }
+
+        return $response->withJson($result,200,JSON_UNESCAPED_UNICODE);
+
     }
 }
