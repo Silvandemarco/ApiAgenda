@@ -136,7 +136,7 @@ class Agenda {
             $agendamentosDia = $database->select("vw_agendamentos",["hora_inicial", "hora_final"],["AND" =>["id_profissional" => $this->profissional,"data" => $this->datatime]]);
             $duracao = 0;
             for($i = 0;$i < count($this->id_prof_serv); $i++){
-                $duracao += $database->select("prof_serv","duracao",["id_prof_serv" => $this->id_prof_serv[$i]])[0];
+                $duracao += $database->select("servico","duracao",["id_servico" => $this->id_prof_serv[$i]])[0];
             }
             if($duracao == 0){
                 $duracao = 1440;
@@ -232,7 +232,7 @@ class Agenda {
         $prof = $data->id_profissional;
         $cli = $data->id_cliente;
         $this->datetime = new \DateTime($data->datetime);
-        $this->id_prof_serv = $data->prof_serv;
+        $this->id_prof_serv = $data->servico;
 
         require __DIR__ . '/../src/database.php';
 
@@ -248,7 +248,7 @@ class Agenda {
             $this->setId($database->id());
             for($i=0;$i<count($this->id_prof_serv);$i++){
                 $query = $database->insert("servico_agenda", [
-                    "id_servico" => $this->id_prof_serv[$i]->id_prof_serv,
+                    "id_servico" => $this->id_prof_serv[$i]->id_servico,
                     "id_agenda" => $this->getId()
                 ]);
                 if($query->rowCount() == 0){
@@ -308,8 +308,12 @@ class Agenda {
         }
         $rows = count($result);
         for ($i=0; $i<$rows;$i++){
-            $result2 = $database->select('servico_agenda',["[><]prof_serv" => ["servico_agenda.id_servico" => "id_prof_serv"],"[><]servico" => ["prof_serv.id_servico" => "id_servico"]],["servico.id_servico","servico.nome","prof_serv.id_prof_serv","prof_serv.descricao","prof_serv.valor","prof_serv.duracao"],['servico_agenda.id_agenda'=>$result[$i]["id_agenda"]]);
+            $result2 = $database->select('servico_agenda',["[><]servico" => ["servico_agenda.id_servico" => "id_servico"]],["servico.id_servico","servico.descricao","servico.valor","servico.duracao"],['servico_agenda.id_agenda'=>$result[$i]["id_agenda"]]);
             $result[$i]["servicos"] = $result2[0];
+        }
+        for ($i=0; $i<$rows;$i++){ 
+            $result2 = $database->select('pessoa','*',["pessoa.id_pessoa" => $result[$i]["id_cliente"]]);
+            $result[$i]["cliente"] = $result2[0];
         }
         return $response->withJson($result,200,JSON_UNESCAPED_UNICODE);
     }
@@ -339,7 +343,7 @@ class Agenda {
         }
         $rows = count($result);
         for ($i=0; $i<$rows;$i++){
-            $result2 = $database->select('servico_agenda',["[><]prof_serv" => ["servico_agenda.id_servico" => "id_prof_serv"],"[><]servico" => ["prof_serv.id_servico" => "id_servico"]],["servico.id_servico","servico.nome","prof_serv.id_prof_serv","prof_serv.descricao","prof_serv.valor","prof_serv.duracao"],['servico_agenda.id_agenda'=>$result[$i]["id_agenda"]]);
+            $result2 = $database->select('servico_agenda',["[><]servico" => ["servico_agenda.id_servico" => "id_servico"]],["servico.id_servico","servico.descricao","servico.valor","servico.duracao"],['servico_agenda.id_agenda'=>$result[$i]["id_agenda"]]);
             $result[$i]["servicos"] = $result2[0];
         }
         for ($i=0; $i<$rows;$i++){ 
@@ -350,25 +354,15 @@ class Agenda {
     }
 
     public function cancelar($request, $response){
-        // $json = $request->getBody();
-        // echo "json";
-        // echo $json;
-
-        // $data = json_decode($json);
-        // echo "data";
-        // echo $data;
 
         if($request->getParam('id_agenda') > 0)
 			$idAgenda = $request->getParam('id_agenda');
-            // echo "idAgenda";
-            // echo $idAgenda;
+			$status = $request->getParam('status');
 
-
-        //$idAgenda = $data->id_agenda;
 
         require __DIR__ . '/../src/database.php';
 
-        $query = $database->update("agenda", ["status" => "C"],["id_agenda" => $idAgenda]);
+        $query = $database->update("agenda", ["status" => $status],["id_agenda" => $idAgenda]);
 
         if($query->rowCount() > 0){
             //$enviaremail = mail("silvandemarco@gmail.com", "Teste", "teste teste", "From: webmaster@example.com");
@@ -376,7 +370,7 @@ class Agenda {
             return $response->withJson(
                 [
                     "erro" => false,
-                    "msg" => "Agendamento cancelado."
+                    "msg" => "Agendamento alterado."
                 ],200,JSON_UNESCAPED_UNICODE
             );
             
