@@ -2,6 +2,7 @@
 
 namespace Model;
 use PDO;
+use Medoo\Medoo;
 class Pessoas {
 	protected $id;
 	protected $nome;
@@ -517,6 +518,51 @@ class Pessoas {
             $result2 = $database->select('CIDADE', '*',['id_cidade'=>$result[$i]["id_cidade"]]);
             $result[$i]["cidade"] = $result2[0];
         }
+        return $response->withJson($result,200,JSON_UNESCAPED_UNICODE);
+	}
+	
+	public function exibirCliente($request, $response){
+
+        if($request->getParam('id') > 0)
+			$this->id = $request->getParam('id');
+			
+		require __DIR__ . '/../src/database.php';
+
+		
+		$result = $database->select('agenda',["[><]pessoa" => ["agenda.id_cliente" => "id_pessoa"]],
+			[
+				'pessoa.id_pessoa',
+				'pessoa.nome',
+				'pessoa.sobrenome',
+				'pessoa.nascimento',
+				'pessoa.email',
+				'pessoa.telefone',
+				'pessoa.endereco',
+				'pessoa.numero',
+				'pessoa.complemento',
+				'pessoa.bairro',
+				'pessoa.id_cidade',
+				'pessoa.cep',
+				'pessoa.tipo',
+				'ultimo_agendamento' => Medoo::raw("MAX(agenda.datetime)"),
+				'qtd_agendamento' => Medoo::raw("COUNT(agenda.id_cliente)")
+			],["agenda.id_profissional" => $this->id,
+			"GROUP" => [
+				'pessoa.id_pessoa',
+				'pessoa.nome',
+				'pessoa.sobrenome',
+				'pessoa.nascimento',
+				'pessoa.email',
+				'pessoa.telefone',
+				'pessoa.endereco',
+				'pessoa.numero',
+				'pessoa.complemento',
+				'pessoa.bairro',
+				'pessoa.id_cidade',
+				'pessoa.cep',
+				'pessoa.tipo'
+			], "ORDER" => ["pessoa.nome" => "ASC"]]);
+        
         return $response->withJson($result,200,JSON_UNESCAPED_UNICODE);
     }
 }

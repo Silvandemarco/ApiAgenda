@@ -13,6 +13,11 @@ $app->get('/pessoas/{quantidade}', function(Request $request, Response $response
     return $pessoas->exibirPessoaPorQuantidade($request, $response);
 });
 
+$app->get('/clientes', function(Request $request, Response $response) {
+    $pessoas = new \Model\Pessoas();
+    return $pessoas->exibirCliente($request, $response);
+});
+
 $app->post('/pessoas', function(Request $request, Response $response){
     $pessoas = new \Model\Pessoas();
     return $pessoas->inserir($request, $response);

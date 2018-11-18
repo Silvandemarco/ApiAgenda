@@ -3,6 +3,7 @@
 namespace Model;
 use PDO;
 use Medoo\Medoo;
+date_default_timezone_set('America/Sao_Paulo');
 class Agenda {
     private $id;
     private $profissional;
@@ -117,6 +118,7 @@ class Agenda {
     }
 
     public function exibirHorasLivres($request, $response){
+        //date_default_timezone_set('America/Sao_Paulo');
         // http://localhost/agenda?id_pessoa=1&data=2018-09-04&servico[]=1&servico[]=2
         if($request->getParam('id_pessoa') > 0)
             $this->profissional = $request->getParam('id_pessoa');
@@ -209,6 +211,19 @@ class Agenda {
                 while(strtotime("+".$duracao." minutes",$horas_livres[$i]["hora_inicial"]) <= $horas_livres[$i]["hora_final"]){
                     array_push($periodosLivres, date("H:i:s",$horas_livres[$i]["hora_inicial"]));
                     $horas_livres[$i]["hora_inicial"] = strtotime("+".$duracao." minutes",$horas_livres[$i]["hora_inicial"]);
+                }
+            }
+
+            //se dia for hoje, remove horas que já passou
+            if(date("Y-m-d") == $this->datatime)
+            {
+                for($i=0;$i<count($periodosLivres);$i++)
+                {
+                    if(strtotime($periodosLivres[$i]) <= time())
+                    {
+                        array_splice($periodosLivres, $i,1);
+                        $i--;
+                    }
                 }
             }
 
@@ -322,12 +337,15 @@ class Agenda {
         $cli = 0;
         $mes = 0;
         $ano = 0;
+        $prof = 0;
         if($request->getParam('pessoa') > 0)
 			$cli = $request->getParam('pessoa');
 		if($request->getParam('mes') > 0)
             $mes = $request->getParam('mes');
         if($request->getParam('ano') > 0)
             $ano = $request->getParam('ano');
+        if($request->getParam('profissional') > 0)
+			$prof = $request->getParam('profissional');
         $ultimo_dia = date("t", mktime(0,0,0,$mes,'01',$ano));
 		require __DIR__ . '/../src/database.php';
 		
@@ -339,7 +357,10 @@ class Agenda {
                 ],404,JSON_UNESCAPED_UNICODE
             );
         else{
-            $result = $database->select('agenda','*',["agenda.id_cliente" => $cli, "agenda.datetime[>=]" => $ano."-".$mes."-01 00:00:00", "agenda.datetime[<=]" => $ano."-".$mes."-".$ultimo_dia." 23:59:59"]);
+            if($prof == 0)
+                $result = $database->select('agenda','*',["agenda.id_cliente" => $cli, "agenda.datetime[>=]" => $ano."-".$mes."-01 00:00:00", "agenda.datetime[<=]" => $ano."-".$mes."-".$ultimo_dia." 23:59:59"]);
+            else
+            $result = $database->select('agenda','*',["agenda.id_profissional" => $prof, "agenda.id_cliente" => $cli, "agenda.datetime[>=]" => $ano."-".$mes."-01 00:00:00", "agenda.datetime[<=]" => $ano."-".$mes."-".$ultimo_dia." 23:59:59"]);
         }
         $rows = count($result);
         for ($i=0; $i<$rows;$i++){
@@ -349,6 +370,10 @@ class Agenda {
         for ($i=0; $i<$rows;$i++){ 
             $result2 = $database->select('pessoa','*',["pessoa.id_pessoa" => $result[$i]["id_profissional"]]);
             $result[$i]["profissional"] = $result2[0];
+        }
+        for ($i=0; $i<$rows;$i++){ 
+            $result2 = $database->select('pessoa','*',["pessoa.id_pessoa" => $result[$i]["id_cliente"]]);
+            $result[$i]["cliente"] = $result2[0];
         }
         return $response->withJson($result,200,JSON_UNESCAPED_UNICODE);
     }

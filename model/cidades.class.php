@@ -49,9 +49,9 @@ class Cidades {
 
         require __DIR__ . '/../src/database.php';
         if($this->getId() == 0)
-            $result = $database->select('CIDADE', '*');
+            $result = $database->select('CIDADE', '*',["cidade.uf" => "RS","ORDER" => ["cidade.nome" => "ASC"]]);
         else
-            $result = $database->select('CIDADE', '*',['id_cidade'=>$this->id]);
+            $result = $database->select('CIDADE', '*',['id_cidade'=>$this->id,"cidade.uf" => "RS", "ORDER" => ["cidade.nome" => "ASC"]]);
 
         return $response->withJson($result,200,JSON_UNESCAPED_UNICODE);
     }
