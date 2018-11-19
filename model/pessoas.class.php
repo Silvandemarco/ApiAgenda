@@ -3,6 +3,7 @@
 namespace Model;
 use PDO;
 use Medoo\Medoo;
+use PHPMailer\PHPMailer\PHPMailer;
 class Pessoas {
 	protected $id;
 	protected $nome;
@@ -564,5 +565,84 @@ class Pessoas {
 			], "ORDER" => ["pessoa.nome" => "ASC"]]);
         
         return $response->withJson($result,200,JSON_UNESCAPED_UNICODE);
-    }
+	}
+	
+	public function recuperaSenha($request, $response)
+	{
+		if($request->getParam('email') != "")
+			$this->email = $request->getParam('email');
+
+		require __DIR__ . '/../src/database.php';
+
+		$result = $database->select('pessoa','*',["pessoa.email" => $this->email]);
+		
+		require __DIR__ . '/../src/bCrypt.php';
+		$novaSenha = $this->random_str(6);
+		$hash = \Bcrypt::hash($novaSenha);
+
+		$query = $database->update('pessoa',["senha" => $hash],["pessoa.email" => $this->email]);
+
+		if($query->rowCount() > 0)
+		{
+			$mail = new PHPMailer();
+			$mail->isSMTP();
+			$mail->Host = 'smtp.mail.yahoo.com';
+			$mail->SMTPAuth = true;
+			$mail->SMTPSecure = 'tls';
+			$mail->Username = 'silvandemarco@yahoo.com.br';
+			$mail->Password = 's1Lv@N d3m@4C0*';
+			$mail->Port = 587;
+
+			$mail->setFrom('silvandemarco@yahoo.com.br');
+			$mail->addReplyTo('silvandemarco@yahoo.com.br');
+			$mail->addAddress($result[0]['email'], $result[0]['nome']);
+			//$mail->addCC('email@email.com.br', 'Cópia');
+			//$mail->addBCC('email@email.com.br', 'Cópia Oculta')
+
+			$mail->isHTML(true);
+			$mail->Subject = 'Recuperação de senha.';
+			$mail->Body    = 'Sua nova senha é <b>'.$novaSenha.'</b>';
+			if(!$mail->send())
+				return $response->withJson([
+                    "erro" => true,
+                    "msg" => "Falha ao enviar o email."
+                ],200,JSON_UNESCAPED_UNICODE);
+			else
+				return $response->withJson([
+                    "erro" => false,
+                    "msg" => "Nova senha enviada para ".$result[0]['email']
+                ],200,JSON_UNESCAPED_UNICODE);
+		}
+		else{
+			return $response->withJson([
+				"erro" => true,
+				"msg" => "Falha ao alterar a senha."
+			],200,JSON_UNESCAPED_UNICODE);
+		}
+	}
+
+	/**
+	 * Generate a random string, using a cryptographically secure 
+	 * pseudorandom number generator (random_int)
+	 * 
+	 * For PHP 7, random_int is a PHP core function
+	 * For PHP 5.x, depends on https://github.com/paragonie/random_compat
+	 * 
+	 * @param int $length      How many characters do we want?
+	 * @param string $keyspace A string of all possible characters
+	 *                         to select from
+	 * @return string
+	 */
+	public function random_str($length, $keyspace = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')
+	{
+		$pieces = [];
+		$max = mb_strlen($keyspace, '8bit') - 1;
+		for ($i = 0; $i < $length; ++$i) {
+			$pieces []= $keyspace[random_int(0, $max)];
+		}
+		return implode('', $pieces);
+		//var_dump(random_str(32));
+		//var_dump(random_str(8, 'abcdefghijklmnopqrstuvwxyz'));
+	}
+
 }

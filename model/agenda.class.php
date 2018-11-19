@@ -3,6 +3,7 @@
 namespace Model;
 use PDO;
 use Medoo\Medoo;
+use PHPMailer\PHPMailer\PHPMailer;
 date_default_timezone_set('America/Sao_Paulo');
 class Agenda {
     private $id;
@@ -392,6 +393,45 @@ class Agenda {
         if($query->rowCount() > 0){
             //$enviaremail = mail("silvandemarco@gmail.com", "Teste", "teste teste", "From: webmaster@example.com");
             //echo $enviaremail;
+            if($status == "C")
+            {
+                $agenda = $database->select('agenda','*',["id_agenda" => $idAgenda]);
+                //print_r($agenda);
+                $cliente = $database->select('pessoa','*',["id_pessoa" => $agenda[0]['id_cliente']]);
+                //echo $agenda[0]['id_cliente'];
+                $profissional = $database->select('pessoa','*',["id_pessoa" => $agenda[0]['id_profissional']]);
+                //echo $agenda[0]['id_profissional'];
+                $mail = new PHPMailer();
+                $mail->isSMTP();
+                $mail->Host = 'smtp.mail.yahoo.com';
+                $mail->SMTPAuth = true;
+                $mail->SMTPSecure = 'tls';
+                $mail->Username = 'silvandemarco@yahoo.com.br';
+                $mail->Password = 's1Lv@N d3m@4C0*';
+                $mail->Port = 587;
+
+                $mail->setFrom('silvandemarco@yahoo.com.br');
+                $mail->addReplyTo('silvandemarco@yahoo.com.br');
+                $mail->addAddress($cliente[0]['email'], $cliente[0]['nome']);
+                $mail->addAddress($profissional[0]['email'], $profissional[0]['nome']);
+                //$mail->addCC('email@email.com.br', 'Cópia');
+                //$mail->addBCC('email@email.com.br', 'Cópia Oculta')
+
+                $mail->isHTML(true);
+                $mail->Subject = 'Agendamento cancelado.';
+                $mail->Body    = 'O agendamento marcado para '.$agenda[0]['datetime'].' foi cancelado.';
+                //$mail->AltBody = 'Para visualizar essa mensagem acesse http://site.com.br/mail';
+                //$mail->addAttachment('/tmp/image.jpg', 'nome.jpg');
+                /*
+                if(!$mail->send()) {
+                    echo 'Não foi possível enviar a mensagem.<br>';
+                    echo 'Erro: ' . $mail->ErrorInfo;
+                } else {
+                    echo 'Mensagem enviada.';
+                }
+                */
+            }
+
             return $response->withJson(
                 [
                     "erro" => false,

@@ -8,6 +8,11 @@ $app->get('/pessoas', function(Request $request, Response $response) {
     return $pessoas->exibirPessoa($request, $response);
 });
 
+$app->get('/recuperaSenha', function(Request $request, Response $response) {
+    $pessoas = new \Model\Pessoas();
+    return $pessoas->recuperaSenha($request, $response);
+});
+
 $app->get('/pessoas/{quantidade}', function(Request $request, Response $response){
     $pessoas = new \Model\Pessoas();
     return $pessoas->exibirPessoaPorQuantidade($request, $response);
