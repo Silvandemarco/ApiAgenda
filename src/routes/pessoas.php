@@ -29,8 +29,18 @@ $app->post('/pessoas', function(Request $request, Response $response){
 });
 
 $app->put('/pessoas', function(Request $request, Response $response){
-    $profissionais = new \Model\profissionais();
-    return $profissionais->alterar($request, $response);
+    $pessoas = new \Model\Pessoas();
+    return $pessoas->alterarDados($request, $response);
+});
+
+$app->put('/endereco', function(Request $request, Response $response){
+    $pessoas = new \Model\Pessoas();
+    return $pessoas->alterarEndereco($request, $response);
+});
+
+$app->put('/alterarSenha', function(Request $request, Response $response){
+    $pessoas = new \Model\Pessoas();
+    return $pessoas->alterarSenha($request, $response);
 });
 
 $app->delete('/pessoas', function(Request $request, Response $response){

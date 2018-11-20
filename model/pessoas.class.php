@@ -197,19 +197,33 @@ class Pessoas {
 		$this->senha = $senha;
 	}
 
-	public function inserirLogin($request, $response){
+	public function alterarSenha($request, $response){
 		$json = $request->getBody();
 
 		$data = json_decode($json);
 		
         $this->email = $data->email;
-		$this->senha=$data->senha;
+		$this->senha = $data->senha;
 		
 		require __DIR__ . '/../src/bCrypt.php';
 
 		$hash = \Bcrypt::hash($this->senha);
 
 		require __DIR__ . '/../src/database.php';
+		$query = $database->update('pessoa',["senha" => $hash],["pessoa.email" => $this->email]);
+
+		if($query->rowCount() > 0){
+			return $response->withJson([
+				"erro" => false,
+				"msg" => "Senha alterada."
+			],200,JSON_UNESCAPED_UNICODE);
+		}
+		else{
+			return $response->withJson([
+				"erro" => true,
+				"msg" => "Falha ao alterar a senha."
+			],200,JSON_UNESCAPED_UNICODE);
+		}
 
 		return $response->withJson($hash,200,JSON_UNESCAPED_UNICODE);
 	}
@@ -567,8 +581,7 @@ class Pessoas {
         return $response->withJson($result,200,JSON_UNESCAPED_UNICODE);
 	}
 	
-	public function recuperaSenha($request, $response)
-	{
+	public function recuperaSenha($request, $response){
 		if($request->getParam('email') != "")
 			$this->email = $request->getParam('email');
 
@@ -643,6 +656,108 @@ class Pessoas {
 		return implode('', $pieces);
 		//var_dump(random_str(32));
 		//var_dump(random_str(8, 'abcdefghijklmnopqrstuvwxyz'));
+	}
+
+	public function alterarDados($request, $response){
+		$json = $request->getBody();
+
+		$data = json_decode($json);
+		
+        $this->nome = $data->nome;
+        $this->sobrenome = $data->sobrenome;
+        $this->nascimento = $data->nascimento;
+        $this->telefone = $data->telefone;
+        $this->email = $data->email;
+        $this->id = $data->id_pessoa;
+        $this->tipo = $data->tipo;
+		
+		//require __DIR__ . '/../src/bCrypt.php';
+		require __DIR__ . '/../src/database.php';
+
+		$query = $database->update("pessoa", [
+			"nome" => $this->nome,
+			"sobrenome" => $this->sobrenome,
+			"nascimento" => $this->nascimento,
+			"telefone" => $this->telefone,
+			"email" => $this->email,
+			"tipo" => $this->tipo
+		],
+		[
+			"id_pessoa" => $this->id
+		]);
+
+		//$this->setId($database->id());
+
+		if($query->rowCount() > 0){
+
+			return $response->withJson(
+				[
+					"erro" => false,
+					"ID" => $this->id,
+					"msg" => "Pessoa alterada com sucesso."
+				],201,JSON_UNESCAPED_UNICODE
+			);
+		
+		}
+		else{
+			return $response->withJson(
+				[
+					"erro" => true,
+					"msg" => "Falha ao alterar a pessoa."
+				],201,JSON_UNESCAPED_UNICODE
+			);
+		}
+	}
+
+	public function alterarEndereco($request, $response){
+		$json = $request->getBody();
+
+		$data = json_decode($json);
+		
+        $this->cep = $data->cep;
+        $this->endereco = $data->endereco;
+        $this->numero = $data->numero;
+        $this->complemento = $data->complemento;
+        $this->bairro = $data->bairro;
+        $this->id = $data->id_pessoa;
+        $this->id_cidade = $data->id_cidade;
+		
+		//require __DIR__ . '/../src/bCrypt.php';
+		require __DIR__ . '/../src/database.php';
+
+		$query = $database->update("pessoa", [
+			"cep" => $this->cep,
+			"endereco" => $this->endereco,
+			"numero" => $this->numero,
+			"complemento" => $this->complemento,
+			"bairro" => $this->bairro,
+			"id_cidade" => $this->id_cidade
+		],
+		[
+			"id_pessoa" => $this->id
+		]);
+
+		//$this->setId($database->id());
+
+		if($query->rowCount() > 0){
+
+			return $response->withJson(
+				[
+					"erro" => false,
+					"ID" => $this->id,
+					"msg" => "Endereço alterado com sucesso."
+				],201,JSON_UNESCAPED_UNICODE
+			);
+		
+		}
+		else{
+			return $response->withJson(
+				[
+					"erro" => true,
+					"msg" => "Falha ao alterar o endereço."
+				],201,JSON_UNESCAPED_UNICODE
+			);
+		}
 	}
 
 }
