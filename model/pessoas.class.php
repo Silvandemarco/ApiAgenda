@@ -462,7 +462,7 @@ class Pessoas {
 				"status" => false
 			],
 			[
-				"dia" => "Friday", 
+				"dia" => "Saturday", 
 				"status" => false
 			]
 		];
